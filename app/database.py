@@ -29,3 +29,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # -----------------------------
 # This base class will be inherited by all database models
 Base = declarative_base()
+
+def get_db():
+    """Dependency to get a database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
