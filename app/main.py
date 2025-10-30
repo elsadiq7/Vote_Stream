@@ -3,15 +3,13 @@
 # ===========================================================
 from ssl import create_default_context  # For secure SSL connections (not used here, but imported)
 from turtle import mode, title
-from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException
-from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from fastapi.params import Depends
-from . import models
+from . import models,scehmas
 from .database import engine , get_db
 from sqlalchemy.orm import Session
 
@@ -22,16 +20,6 @@ models.Base.metadata.create_all(bind=engine)  # Create database tables
 # ===========================================================
 app = FastAPI(title="FastAPI Posts API", version="1.0")
 
-
-# ===========================================================
-# Pydantic Model - Request Validation Schema
-# ===========================================================
-class Post(BaseModel):
-    id: Optional[int] = None
-    title: str
-    content: str
-    published: bool = True
-    created_at: Optional[str] = None
 
 
 # ===========================================================
@@ -68,7 +56,7 @@ def get_posts(db: Session = Depends(get_db)):
 # Create a new post
 # -----------------------------------------------------------
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_post(post: Post,db: Session = Depends(get_db)):
+def create_post(post: scehmas.Post,db: Session = Depends(get_db)):
     """
     Create a new post.
     - Validates input using the Post model.
@@ -144,7 +132,7 @@ def delete_post(id: int,db: Session = Depends(get_db)):
 # Update an existing post
 # -----------------------------------------------------------
 @app.put("/posts/{id}")
-def update_post(id: int, updated_post: Post, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: scehmas.Post, db: Session = Depends(get_db)):
     """
     Update a post by its ID.
     - Validates input using the Post model.
