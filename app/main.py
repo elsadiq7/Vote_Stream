@@ -12,6 +12,7 @@ from fastapi.params import Depends
 from . import models,scehmas
 from .database import engine , get_db
 from sqlalchemy.orm import Session
+from typing import List
 
 models.Base.metadata.create_all(bind=engine)  # Create database tables
 
@@ -36,12 +37,9 @@ def root():
 # Get all posts
 # -----------------------------------------------------------
 
-@app.get("/sqlalchemy")
-def test_posts(db: Session = Depends(get_db)):
-    return db.query(models.Posts).all()
 
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[scehmas.Post])
 def get_posts(db: Session = Depends(get_db)):
     """
     Retrieve all posts from the database.
@@ -49,14 +47,14 @@ def get_posts(db: Session = Depends(get_db)):
     # cursor.execute("SELECT * FROM posts;")
     # posts = cursor.fetchall()
     posts=db.query(models.Posts).all()
-    return {"data": posts}
+    return  posts
 
 
 # -----------------------------------------------------------
 # Create a new post
 # -----------------------------------------------------------
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_post(post: scehmas.Post,db: Session = Depends(get_db)):
+@app.post("/posts", status_code=status.HTTP_201_CREATED, response_model=scehmas.Post)
+def create_post(post: scehmas.PostCreate,db: Session = Depends(get_db)):
     """
     Create a new post.
     - Validates input using the Post model.
@@ -78,13 +76,13 @@ def create_post(post: scehmas.Post,db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_post)
 
-    return {"data": new_post}
+    return new_post
 
 
 # -----------------------------------------------------------
 # Retrieve a single post by ID
 # -----------------------------------------------------------
-@app.get("/posts/{id}")
+@app.get("/posts/{id}", response_model=scehmas.Post)
 def get_post(id: int,db: Session = Depends(get_db)):
     """
     Retrieve a specific post by ID.
@@ -100,7 +98,7 @@ def get_post(id: int,db: Session = Depends(get_db)):
             detail=f"Post with id {id} was not found",
         )
 
-    return {"post_detail": post}
+    return  post
 
 
 # -----------------------------------------------------------
@@ -131,8 +129,8 @@ def delete_post(id: int,db: Session = Depends(get_db)):
 # -----------------------------------------------------------
 # Update an existing post
 # -----------------------------------------------------------
-@app.put("/posts/{id}")
-def update_post(id: int, updated_post: scehmas.Post, db: Session = Depends(get_db)):
+@app.put("/posts/{id}", response_model=scehmas.Post)
+def update_post(id: int, updated_post: scehmas.PostCreate, db: Session = Depends(get_db)):
     """
     Update a post by its ID.
     - Validates input using the Post model.
@@ -152,4 +150,12 @@ def update_post(id: int, updated_post: scehmas.Post, db: Session = Depends(get_d
     post_query.update(data, synchronize_session=False)
     db.commit()
 
-    return {"data": post_query.first()}
+    return post_query.first()
+
+@app.post("/users", status_code=status.HTTP_201_CREATED,response_model=scehmas.UserOut)
+def create_user(user: scehmas.UserCreate,db: Session = Depends(get_db)):
+    new_user=models.Users(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
