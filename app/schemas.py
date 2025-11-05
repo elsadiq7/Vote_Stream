@@ -3,6 +3,7 @@ from venv import create
 from pydantic import BaseModel,EmailStr
 from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 # ===========================================================
 # Pydantic Model - Request Validation Schema
@@ -34,5 +35,16 @@ class UserOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class UserLogin(BaseModel):
+    email:EmailStr
+    password:str
+
+class Token(BaseModel):
+    access_token:str
+    token_type:str
+
+class TokenData(BaseModel):
+    id:Optional[str]=None
 
 
