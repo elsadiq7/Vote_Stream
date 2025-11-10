@@ -19,7 +19,7 @@ router=APIRouter(
 
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db),get_current_user=Depends(outh2.get_current_user)):
+def get_posts(db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
     """
     Retrieve all posts from the database.
     """
@@ -33,7 +33,7 @@ def get_posts(db: Session = Depends(get_db),get_current_user=Depends(outh2.get_c
 # Create a new post
 # -----------------------------------------------------------
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
-def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),get_current_user=Depends(outh2.get_current_user)):
+def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
     """
     Create a new post.
     - Validates input using the Post model.
@@ -50,7 +50,7 @@ def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),get_curre
     # new_post = cursor.fetchone()
     # conn.commit()
     
-    new_post=models.Posts(**post.dict())
+    new_post=models.Posts(user_id=current_user.id,**post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -62,7 +62,7 @@ def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),get_curre
 # Retrieve a single post by ID
 # -----------------------------------------------------------
 @router.get("/{id}", response_model=schemas.Post)
-def get_post(id: int,db: Session = Depends(get_db),get_current_user=Depends(outh2.get_current_user)):
+def get_post(id: int,db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
     """
     Retrieve a specific post by ID.
     - Returns HTTP 404 if not found.
@@ -84,7 +84,7 @@ def get_post(id: int,db: Session = Depends(get_db),get_current_user=Depends(outh
 # Delete a post by ID
 # -----------------------------------------------------------
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int,db: Session = Depends(get_db),get_current_user=Depends(outh2.get_current_user)):
+def delete_post(id: int,db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
     """
     Delete a post by ID.
     - Returns HTTP 404 if the post doesn't exist.
@@ -94,14 +94,20 @@ def delete_post(id: int,db: Session = Depends(get_db),get_current_user=Depends(o
     # deleted_post = cursor.fetchone()
     # conn.commit()
 
-    post= deleted_post=db.query(models.Posts).filter(models.Posts.id==id)
+    post=db.query(models.Posts).filter(models.Posts.id==id)
 
     if post.first() is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Post with id {id} does not exist",
         )
+    if post.first().user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform requested action",
+        )
     post.delete(synchronize_session=False)
+    db.commit()     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -113,7 +119,7 @@ def update_post(
     id: int,
     updated_post: schemas.PostCreate,
     db: Session = Depends(get_db),
-    get_current_user=Depends(outh2.get_current_user)
+    current_user=Depends(outh2.get_current_user)
 ):
     """
     Update a post by its ID.
@@ -128,6 +134,11 @@ def update_post(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Post with id {id} does not exist",
+        )
+    if post.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to perform requested action",
         )
 
     # ✅ Use .dict() instead of .model_dump()
