@@ -3,13 +3,10 @@
 # ===========================================================
 from ssl import create_default_context  # For secure SSL connections (not used here, but imported)
 from turtle import mode, title
-from fastapi import FastAPI,APIRouter, Response, status, HTTPException
+from fastapi import FastAPI
 from random import randrange
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
-from fastapi.params import Depends
-from . import models, schemas,utils
+
+from . import models
 from .database import engine , get_db
 from .routers import post,user,auth
 

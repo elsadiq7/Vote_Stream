@@ -5,6 +5,7 @@ from fastapi import  Response, status, HTTPException,Depends,APIRouter
 from typing import List
 from sqlalchemy.orm import Session
 from ..database import   get_db
+from typing import Optional
 router=APIRouter(
 
     prefix="/posts",
@@ -19,13 +20,14 @@ router=APIRouter(
 
 
 @router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
+def get_posts(db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user),
+              limit: int = 10,skip: int = 0,search:Optional[str]=""):
     """
     Retrieve all posts from the database.
     """
     # cursor.execute("SELECT * FROM posts;")
     # posts = cursor.fetchall()
-    posts=db.query(models.Posts).all()
+    posts=db.query(models.Posts).filter(models.Posts.title.ilike(f"%{search}%")).limit(limit).offset(skip).all()#.filter(models.Posts.user_id==current_user.id).all()
     return  posts
 
 
@@ -70,12 +72,20 @@ def get_post(id: int,db: Session = Depends(get_db),current_user=Depends(outh2.ge
     # cursor.execute("SELECT * FROM posts WHERE id = %s;", (str(id),))
     # post = cursor.fetchone()
     post=db.query(models.Posts).filter(models.Posts.id==id).first()
-
+    print(post)
+    
+   
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Post with id {id} was not found",
         )
+    # if post.user_id != current_user.id:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Not authorized to perform requested action",
+    #     )
+  
 
     return  post
 
