@@ -6,9 +6,14 @@ from turtle import mode, title
 from fastapi import FastAPI
 from random import randrange
 
+from app.outh2 import SECRET_KEY
+
 from . import models
 from .database import engine , get_db
-from .routers import post,user,auth
+from .routers import post,user,auth,vote
+from .config import Settings 
+
+settings=Settings()
 
 models.Base.metadata.create_all(bind=engine)
   # Create database tables
@@ -22,6 +27,7 @@ app = FastAPI(title="FastAPI Posts API", version="1.0")
 app.include_router(post.router)
 app.include_router(user.router)
 app.include_router(auth.router)
+app.include_router(vote.router)
 # ===========================================================
 # Routes (Endpoints)
 # ===========================================================

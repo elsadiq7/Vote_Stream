@@ -1,4 +1,6 @@
 
+from unittest import result
+from urllib import response
 from app import outh2
 from .. import models,schemas,outh2
 from fastapi import  Response, status, HTTPException,Depends,APIRouter
@@ -6,6 +8,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from ..database import   get_db
 from typing import Optional
+from sqlalchemy import func
 router=APIRouter(
 
     prefix="/posts",
@@ -19,16 +22,36 @@ router=APIRouter(
 
 
 
-@router.get("/", response_model=List[schemas.Post])
-def get_posts(db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user),
-              limit: int = 10,skip: int = 0,search:Optional[str]=""):
-    """
-    Retrieve all posts from the database.
-    """
-    # cursor.execute("SELECT * FROM posts;")
-    # posts = cursor.fetchall()
-    posts=db.query(models.Posts).filter(models.Posts.title.ilike(f"%{search}%")).limit(limit).offset(skip).all()#.filter(models.Posts.user_id==current_user.id).all()
-    return  posts
+@router.get("/", response_model=List[schemas.PostOut])
+def get_posts(
+    db: Session = Depends(get_db),
+    current_user=Depends(outh2.get_current_user),
+    limit: int = 10,
+    skip: int = 0,
+    search: Optional[str] = ""
+):
+
+    results = (
+        db.query(models.Posts,
+                 func.count(models.Votes.post_id).label("vote"))
+          .join(models.Votes, models.Votes.post_id == models.Posts.id, isouter=True)
+          .filter(models.Posts.title.ilike(f"%{search}%"))
+          .group_by(models.Posts.id)
+          .limit(limit)
+          .offset(skip)
+          .all()
+    )
+
+    # VERY IMPORTANT: convert tuple → dict
+    output = []
+    for post, vote in results:
+        output.append({
+            "Post": post,
+            "vote": vote
+        })
+
+    return output
+
 
 
 # -----------------------------------------------------------
@@ -63,31 +86,32 @@ def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),current_u
 # -----------------------------------------------------------
 # Retrieve a single post by ID
 # -----------------------------------------------------------
-@router.get("/{id}", response_model=schemas.Post)
-def get_post(id: int,db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
-    """
-    Retrieve a specific post by ID.
-    - Returns HTTP 404 if not found.
-    """
-    # cursor.execute("SELECT * FROM posts WHERE id = %s;", (str(id),))
-    # post = cursor.fetchone()
-    post=db.query(models.Posts).filter(models.Posts.id==id).first()
-    print(post)
+@router.get("/{id}", response_model=schemas.PostOut)
+def get_post(id: int,
+             db: Session = Depends(get_db),
+             current_user = Depends(outh2.get_current_user)):
     
-   
+    post = (
+        db.query(models.Posts,
+                 func.count(models.Votes.post_id).label("vote"))
+          .join(models.Votes, models.Votes.post_id == models.Posts.id, isouter=True)
+          .filter(models.Posts.id == id)
+          .group_by(models.Posts.id)
+          .first()
+    )
+
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Post with id {id} was not found",
         )
-    # if post.user_id != current_user.id:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail="Not authorized to perform requested action",
-    #     )
-  
 
-    return  post
+    post_obj, vote_count = post
+
+    return {
+        "Post": post_obj,
+        "vote": vote_count
+    }
 
 
 # -----------------------------------------------------------
