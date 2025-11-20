@@ -16,7 +16,7 @@ from .config import Settings
 
 settings=Settings()
 
-# models.Base.metadata.create_all(bind=engine)
+#models.Base.metadata.create_all(bind=engine)
   # Create database tables
 # ===========================================================
 # FastAPI App Initialization
