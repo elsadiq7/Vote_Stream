@@ -1,9 +1,12 @@
-FROM python:3.10.19-alpine3.21
-
+FROM python:3.9.7
 
 WORKDIR /usr/src/app
 
-RUN apk add --no-cache curl gcc musl-dev cargo
+# # Install build tools needed for some Python packages
+# RUN apt-get update && apt-get install -y \
+#     build-essential \
+#     gcc \
+#     && apt-get clean
 
 COPY requirements.txt .
 
@@ -11,7 +14,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-
-
-
-CMD ["uvicorn","app.main:app","--host",  "--port","8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

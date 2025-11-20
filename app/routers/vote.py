@@ -1,4 +1,3 @@
-from tarfile import data_filter
 from turtle import pos
 from app import outh2
 from .. import models, schemas,utils,database
@@ -11,7 +10,7 @@ router=APIRouter(
     ,tags=["Votes"]
 )
  
-
+v
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def vote(vote: schemas.Vote,db: Session = Depends(database.get_db),current_user: int = Depends(outh2.get_current_user)):
     vote_query=db.query(models.Votes).filter(models.Votes.post_id==vote.post_id,models.Votes.user_id ==current_user.id)
