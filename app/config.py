@@ -1,6 +1,12 @@
+"""
+Application configuration settings using Pydantic.
+"""
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
+    """
+    Application settings loaded from environment variables.
+    """
     database_hostname: str
     database_port: str
     database_name: str
@@ -11,7 +17,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int
     
     class Config:
-        env_file = ".env"  # This tells Pydantic to read the .env file
+        """
+        Pydantic configuration.
+        """
+        env_file = ".env"
 
 # Create one instance of the settings to be used everywhere
 settings = Settings()

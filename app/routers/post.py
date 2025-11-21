@@ -1,36 +1,42 @@
-
-from unittest import result
-from urllib import response
-from app import outh2
-from .. import models,schemas,outh2
-from fastapi import  Response, status, HTTPException,Depends,APIRouter
-from typing import List
+"""
+API Router for managing posts.
+"""
+from typing import List, Optional
+from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
-from ..database import   get_db
-from typing import Optional
 from sqlalchemy import func
-router=APIRouter(
+from .. import models, schemas, outh2
+from ..database import get_db
 
+router = APIRouter(
     prefix="/posts",
     tags=["Posts"]
-    
 )
- 
-# -----------------------------------------------------------
-# Get all posts
-# -----------------------------------------------------------
-
 
 
 @router.get("/", response_model=List[schemas.PostOut])
 def get_posts(
     db: Session = Depends(get_db),
-    current_user=Depends(outh2.get_current_user),
+    current_user: models.Users = Depends(outh2.get_current_user),
     limit: int = 10,
     skip: int = 0,
     search: Optional[str] = ""
 ):
+    """
+    Retrieve all posts with pagination and search.
 
+    Args:
+        db (Session): Database session.
+        current_user (models.Users): Authenticated user.
+        limit (int): Number of posts to return.
+        skip (int): Number of posts to skip.
+        search (Optional[str]): Search query for post titles.
+
+    Returns:
+        List[schemas.PostOut]: A list of posts with vote counts.
+    """
+    # Perform a left outer join to get vote counts for each post
+    # group_by is essential when using aggregate functions like count
     results = (
         db.query(models.Posts,
                  func.count(models.Votes.post_id).label("vote"))
@@ -42,7 +48,8 @@ def get_posts(
           .all()
     )
 
-    # VERY IMPORTANT: convert tuple → dict
+    # Convert the query results (list of tuples) into a list of dictionaries
+    # This matches the expected response model structure
     output = []
     for post, vote in results:
         output.append({
@@ -53,29 +60,24 @@ def get_posts(
     return output
 
 
-
-# -----------------------------------------------------------
-# Create a new post
-# -----------------------------------------------------------
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
-def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
+def create_post(
+    post: schemas.PostCreate,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(outh2.get_current_user)
+):
     """
     Create a new post.
-    - Validates input using the Post model.
-    - Inserts into the PostgreSQL database.
+
+    Args:
+        post (schemas.PostCreate): Post data.
+        db (Session): Database session.
+        current_user (models.Users): Authenticated user.
+
+    Returns:
+        models.Posts: The created post.
     """
-    # cursor.execute(
-    #     """
-    #     INSERT INTO posts (title, content, published)
-    #     VALUES (%s, %s, %s)
-    #     RETURNING *;
-    #     """,
-    #     (post.title, post.content, post.published),
-    # )
-    # new_post = cursor.fetchone()
-    # conn.commit()
-    
-    new_post=models.Posts(user_id=current_user.id,**post.dict())
+    new_post = models.Posts(user_id=current_user.id, **post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -83,14 +85,26 @@ def create_post(post: schemas.PostCreate,db: Session = Depends(get_db),current_u
     return new_post
 
 
-# -----------------------------------------------------------
-# Retrieve a single post by ID
-# -----------------------------------------------------------
 @router.get("/{id}", response_model=schemas.PostOut)
-def get_post(id: int,
-             db: Session = Depends(get_db),
-             current_user = Depends(outh2.get_current_user)):
-    
+def get_post(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(outh2.get_current_user)
+):
+    """
+    Retrieve a single post by ID.
+
+    Args:
+        id (int): Post ID.
+        db (Session): Database session.
+        current_user (models.Users): Authenticated user.
+
+    Returns:
+        schemas.PostOut: The post with vote count.
+
+    Raises:
+        HTTPException: If the post is not found.
+    """
     post = (
         db.query(models.Posts,
                  func.count(models.Votes.post_id).label("vote"))
@@ -114,53 +128,64 @@ def get_post(id: int,
     }
 
 
-# -----------------------------------------------------------
-# Delete a post by ID
-# -----------------------------------------------------------
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int,db: Session = Depends(get_db),current_user=Depends(outh2.get_current_user)):
+def delete_post(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: models.Users = Depends(outh2.get_current_user)
+):
     """
     Delete a post by ID.
-    - Returns HTTP 404 if the post doesn't exist.
-    - Returns 204 (No Content) upon success.
+
+    Args:
+        id (int): Post ID.
+        db (Session): Database session.
+        current_user (models.Users): Authenticated user.
+
+    Raises:
+        HTTPException: If the post is not found or user is not authorized.
     """
-    # cursor.execute("DELETE FROM posts WHERE id = %s RETURNING *;", (str(id),))
-    # deleted_post = cursor.fetchone()
-    # conn.commit()
+    post_query = db.query(models.Posts).filter(models.Posts.id == id)
+    post = post_query.first()
 
-    post=db.query(models.Posts).filter(models.Posts.id==id)
-
-    if post.first() is None:
+    if post is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Post with id {id} does not exist",
         )
-    if post.first().user_id != current_user.id:
+    if post.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to perform requested action",
         )
-    post.delete(synchronize_session=False)
+    
+    post_query.delete(synchronize_session=False)
     db.commit()     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# -----------------------------------------------------------
-# Update an existing post
-# -----------------------------------------------------------
 @router.put("/{id}", response_model=schemas.Post)
 def update_post(
     id: int,
     updated_post: schemas.PostCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(outh2.get_current_user)
+    current_user: models.Users = Depends(outh2.get_current_user)
 ):
     """
     Update a post by its ID.
-    - Validates input using the Post model.
-    - Returns HTTP 404 if the post doesn't exist.
-    """
 
+    Args:
+        id (int): Post ID.
+        updated_post (schemas.PostCreate): Updated post data.
+        db (Session): Database session.
+        current_user (models.Users): Authenticated user.
+
+    Returns:
+        models.Posts: The updated post.
+
+    Raises:
+        HTTPException: If the post is not found or user is not authorized.
+    """
     post_query = db.query(models.Posts).filter(models.Posts.id == id)
     post = post_query.first()
 
@@ -175,7 +200,6 @@ def update_post(
             detail="Not authorized to perform requested action",
         )
 
-    # ✅ Use .dict() instead of .model_dump()
     data = updated_post.dict(exclude_unset=True)
     data.pop("id", None)
     data.pop("created_at", None)
