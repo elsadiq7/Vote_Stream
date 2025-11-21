@@ -131,10 +131,6 @@ FastAPI automatically generates interactive API documentation. Once the server i
 
 This project uses **Alembic** for database migrations.
 
-*   **Create a new migration:**
-    ```bash
-    alembic revision --autogenerate -m "message"
-    ```
 *   **Apply migrations:**
     ```bash
     alembic upgrade head
