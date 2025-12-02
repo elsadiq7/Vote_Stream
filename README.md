@@ -96,7 +96,7 @@ The application requires the following environment variables. You can set them i
     ```
 
 6.  **Start the Server:**
-    ```bash
+    ```bashss
     uvicorn app.main:app --reload
     ```
 
