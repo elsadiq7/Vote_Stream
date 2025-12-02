@@ -2,7 +2,7 @@
 Main application entry point.
 """
 
-from fastapi import FastAPI,status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import post, user, auth, vote
 
@@ -25,7 +25,7 @@ app.include_router(auth.router)
 app.include_router(vote.router)
 
 
-@app.get("/", status_code=status.HTTP_200_OK)
+@app.get("/")
 def root():
     """
     Root endpoint to verify the API is working.
