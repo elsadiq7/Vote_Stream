@@ -96,7 +96,7 @@ The application requires the following environment variables. You can set them i
     ```
 
 6.  **Start the Server:**
-    ```bashss
+    ```bash
     uvicorn app.main:app --reload
     ```
 
@@ -117,7 +117,7 @@ FastAPI automatically generates interactive API documentation. Once the server i
 │   ├── database.py     # Database connection setup
 │   ├── main.py         # Application entry point
 │   ├── models.py       # SQLAlchemy database models
-│   ├── outh2.py        # Authentication logic
+│   ├── oauth2.py        # Authentication logic
 │   ├── schemas.py      # Pydantic schemas for request/response
 │   └── utils.py        # Utility functions (hashing, etc.)
 ├── alembic/            # Database migration scripts
