@@ -63,7 +63,7 @@ class Post(PostBase):
     """
     id: int
     created_at: datetime
-    user_id: int
+    owner_id: int
     owner: UserOut
 
     class Config:
@@ -74,7 +74,7 @@ class PostOut(BaseModel):
     Schema for post response with vote count.
     """
     Post: Post
-    vote: int
+    votes: int
 
     class Config:
         orm_mode = True
