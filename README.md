@@ -52,7 +52,7 @@ The application requires the following environment variables. You can set them i
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/elsadiq7/Vote_Stream.git
     cd <repository-directory>
     ```
 
@@ -69,7 +69,7 @@ The application requires the following environment variables. You can set them i
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/elsadiq7/Vote_Stream.git
     cd <repository-directory>
     ```
 
@@ -98,6 +98,11 @@ The application requires the following environment variables. You can set them i
 6.  **Start the Server:**
     ```bash
     uvicorn app.main:app --reload
+    ```
+
+7.  **Run Tests:**
+    ```bash
+    pytest -v -s
     ```
 
 ## 📚 API Documentation
