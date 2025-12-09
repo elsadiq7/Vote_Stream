@@ -15,14 +15,14 @@ jobs:
     
     # Passing secrets to the job context
     env:
-      DATABASE_HOSTNAME: ${{DATABASE_HOSTNAME}}
-      DATABASE_PORT: ${{DATABASE_PORT}}
-      DATABASE_NAME: ${{DATABASE_NAME}}
-      DATABASE_USERNAME: ${{DATABASE_USERNAME}}
-      DATABASE_PASSWORD: ${{DATABASE_PASSWORD}}
-      SECRET_KEY: ${{SECRET_KEY}}
-      ALGORITHM: ${{ALGORITHM}}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${{ACCESS_TOKEN_EXPIRE_MINUTES}}
+      DATABASE_HOSTNAME: ${{secrets.DATABASE_HOSTNAME}}
+      DATABASE_PORT: ${{secrets.DATABASE_PORT}}
+      DATABASE_NAME: ${{secrets.DATABASE_NAME}}
+      DATABASE_USERNAME: ${{secrets.DATABASE_USERNAME}}
+      DATABASE_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
+      SECRET_KEY: ${{secrets.SECRET_KEY}}
+      ALGORITHM: ${{secrets.ALGORITHM}}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${{secrets.ACCESS_TOKEN_EXPIRE_MINUTES}}
 
     steps:
       - name: Checkout repository
@@ -42,5 +42,6 @@ jobs:
 
       - name: Run Tests
         run: |
-           pip install pytest
+           pip install pytest==8.4.2
+           pip install pytest-asyncio==1.2.0
            pytest -v -s
