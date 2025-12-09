@@ -20,12 +20,17 @@ jobs:
       # Step 1: Checkout the repository code
       - name: Checkout repository
         # Use the standard action to fetch the code
-        uses: actions/checkout@v4
-        
-      # Step 2: A simple command to verify the job is running
-      - name: Say hello
-        run: echo "Hello world, the pipeline is running!"
+        uses: actions/checkout@v2
       
-      # NOTE: This is where you would typically add steps for building 
-      # your code (e.g., setting up Node.js, running npm install/build) 
-      # and then deploying it.
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: upgrade pip 
+        run: python -m pip install --upgrade pip
+
+      - name: install dependencies
+        run: pip install -r requirements.txt
+      
+
+      
